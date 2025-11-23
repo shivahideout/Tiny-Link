@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TinyLink</title>
+  <style>
+  /* Body & Background */
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background-color: #121212;
+  color: #ffffff;
+}
+
+/* Navigation Bar */
+nav {
+  background: #1f1f1f;
+  padding: 10px 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  display: flex;
+  gap: 20px;
+}
+
+nav a {
+  color: #4da6ff;
+  text-decoration: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+nav a:hover {
+  color: #80c1ff;
+  text-decoration: underline;
+}
+
+/* Sections */
+#shortenSection, #dashboardSection {
+  background-color: #1e1e1e;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+/* Inputs */
+input {
+  padding: 10px;
+  margin: 5px 0;
+  width: 300px;
+  border-radius: 5px;
+  border: 1px solid #444;
+  background-color: #222;
+  color: #fff;
+}
+
+/* Buttons */
+button {
+  padding: 10px 20px;
+  cursor: pointer;
+  border: none;
+  border-radius: 5px;
+  background-color: #4da6ff;
+  color: #fff;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+button:hover {
+  background-color: #3399ff;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background-color: #1e1e1e;
+}
+
+th, td {
+  padding: 12px;
+  border: 1px solid #333;
+  text-align: left;
+  color: #ffffff;
+}
+
+th {
+  background-color: #2b2b2b;
+}
+
+/* Short link result */
+#result {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 5px;
+  background-color: #2b2b2b;
+}
+
+#shortLink {
+  color: #4da6ff;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+#shortLink:hover {
+  text-decoration: underline;
+}
+
+/* Health Status Box */
+#health-status {
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 8px;
+  font-weight: bold;
+  width: fit-content;
+}
+
+  </style>
+</head>
+
+<body>
+
+  <!-- NAV BAR -->
+  <nav>
+    <a onclick="showSection('shorten')">Shorten URL</a>
+    <a onclick="showSection('dashboard')">Dashboard</a>
+  </nav>
+  <div id="health-status" style="
+    padding:10px;
+    margin:10px 0;
+    border-radius:8px;
+    font-weight:bold;
+    width: fit-content;
+">
+    Checking system health...
+</div>
+
+  <!-- Shorten URL SECTION -->
+  <div id="shortenSection">
+    <h2>Create Short Link</h2>
+   
+    <input type="text" id="urlInput" placeholder="Enter URL..." /><br>
+    <input type="text" id="customCode" placeholder="Custom code (optional)" /><br>
+
+    <button onclick="shortenURL()">Shorten</button>
+
+    <div id="result" class="hidden">
+      <p>Your Short Link:</p>
+      <a id="shortLink" href="#" target="_blank"></a>
+    </div>
+  </div>
+  
+  <!-- DASHBOARD SECTION -->
+  <div id="dashboardSection" class="hidden">
+    <h2>All Shortened Links</h2>
+    <button onclick="loadLinks()">Refresh</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>URL</th>
+          <th>Clicks</th>
+          <th>Last Clicked</th>
+        </tr>
+      </thead>
+      <tbody id="linksTable"></tbody>
+    </table>
+  </div>
+
+  <script>
+  function showSection(page) {
+    document.getElementById("shortenSection").classList.toggle("hidden", page !== "shorten");
+    document.getElementById("dashboardSection").classList.toggle("hidden", page !== "dashboard");
+    if (page === "dashboard") loadLinks();
+  }
+
+  async function shortenURL() {
+    let url = document.getElementById("urlInput").value;
+    let customCode = document.getElementById("customCode").value;
+
+    const response = await fetch("http://localhost:3000/api/links", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, customCode })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        alert("Error: " + data.error);
+        return; // ⛔ Stop, do not continue
+    }
+
+    const link = `http://localhost:3000/${data.code}`;
+    document.getElementById("shortLink").href = link;
+    document.getElementById("shortLink").textContent = link;
+    document.getElementById("result").classList.remove("hidden");
+}
+
+
+  async function loadLinks() {
+    const response = await fetch("http://localhost:3000/api/links");
+    const links = await response.json();
+
+    const table = document.getElementById("linksTable");
+    table.innerHTML = "";
+
+    links.forEach(link => {
+      table.innerHTML += `
+        <tr>
+          <td>${link.code}</td>
+          <td>${link.url}</td>
+          <td>${link.clicks || 0}</td>
+          <td>${link.last_clicked || "-"}</td>
+        </tr>
+      `;
+    });
+  }
+
+
+  async function loadHealthStatus() {
+    const statusBox = document.getElementById("health-status");
+
+    try {
+        const res = await fetch("/health");
+        const data = await res.json();
+
+        if (data.status === "ok") {
+            statusBox.textContent = `System Healthy ✓ (uptime: ${Math.floor(data.uptime)}s)`;
+            statusBox.style.background = "#d4edda";
+            statusBox.style.color = "#155724";
+        } else {
+            statusBox.textContent = "System Issue Detected ⚠️";
+            statusBox.style.background = "#fff3cd";
+            statusBox.style.color = "#856404";
+        }
+    } catch (err) {
+        statusBox.textContent = "Server Down ✗";
+        statusBox.style.background = "#f8d7da";
+        statusBox.style.color = "#721c24";
+    }
+}
+
+document.addEventListener("DOMContentLoaded", loadHealthStatus);
+
+</script>
+
+
+</body>
+</html>
