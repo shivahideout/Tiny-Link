@@ -179,7 +179,7 @@ th {
     let url = document.getElementById("urlInput").value;
     let customCode = document.getElementById("customCode").value;
 
-    const response = await fetch("http://localhost:3000/api/links", {
+    const response = await fetch("/api/links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, customCode })
@@ -192,7 +192,7 @@ th {
         return; // ⛔ Stop, do not continue
     }
 
-    const link = `http://localhost:3000/${data.code}`;
+    const link = `/${data.code}`;
     document.getElementById("shortLink").href = link;
     document.getElementById("shortLink").textContent = link;
     document.getElementById("result").classList.remove("hidden");
@@ -200,7 +200,7 @@ th {
 
 
   async function loadLinks() {
-    const response = await fetch("http://localhost:3000/api/links");
+    const response = await fetch("/api/links");
     const links = await response.json();
 
     const table = document.getElementById("linksTable");
