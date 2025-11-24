@@ -192,7 +192,8 @@ th {
         return; // ⛔ Stop, do not continue
     }
 
-    const link = `/${data.code}`;
+    const link = `${window.location.origin}/${data.code}`;
+
     document.getElementById("shortLink").href = link;
     document.getElementById("shortLink").textContent = link;
     document.getElementById("result").classList.remove("hidden");
